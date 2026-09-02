@@ -68,22 +68,52 @@ export interface Booking {
   paid: boolean
 }
 
+const MAX_ATTEMPTS = 3
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms))
+}
+
+/**
+ * Notion API call with small retry/backoff on transient failures (429 + 5xx +
+ * network errors), so a brief Notion hiccup doesn't turn into a 500 for a POC.
+ * 4xx (other than 429) fail fast — they won't succeed on retry.
+ */
 async function notionFetch(path: string, init: RequestInit): Promise<any> {
-  const res = await fetch(`${NOTION_API}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${token()}`,
-      "Notion-Version": NOTION_VERSION,
-      "Content-Type": "application/json",
-      ...(init.headers || {}),
-    },
-    cache: "no-store",
-  })
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "")
-    throw new Error(`Notion ${init.method} ${path} -> ${res.status}: ${detail}`)
+  let lastErr: unknown
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(`${NOTION_API}${path}`, {
+        ...init,
+        headers: {
+          Authorization: `Bearer ${token()}`,
+          "Notion-Version": NOTION_VERSION,
+          "Content-Type": "application/json",
+          ...(init.headers || {}),
+        },
+        cache: "no-store",
+      })
+      if (res.ok) return res.json()
+
+      const detail = await res.text().catch(() => "")
+      const transient = res.status === 429 || res.status >= 500
+      if (transient && attempt < MAX_ATTEMPTS) {
+        const retryAfter = Number(res.headers.get("retry-after")) || 0
+        await sleep(retryAfter > 0 ? Math.min(retryAfter * 1000, 5000) : attempt * 500)
+        continue
+      }
+      throw new Error(`Notion ${init.method} ${path} -> ${res.status}: ${detail}`)
+    } catch (err) {
+      lastErr = err
+      // Network/DNS error (not an HTTP response) — retry a couple of times.
+      if (err instanceof TypeError && attempt < MAX_ATTEMPTS) {
+        await sleep(attempt * 500)
+        continue
+      }
+      throw err
+    }
   }
-  return res.json()
+  throw lastErr instanceof Error ? lastErr : new Error("Notion request failed")
 }
 
 function readProp(prop: any): any {
@@ -159,11 +189,16 @@ async function queryBookings(filter?: any): Promise<Booking[]> {
   return bookings
 }
 
-/** All requests assigned to a given POC, newest first. */
+/**
+ * All requests assigned to a given POC, newest first. Matched case/whitespace-
+ * insensitively (Notion's title `equals` is exact/case-sensitive), so a small
+ * naming slip between the agent, roster, and login can't hide a POC's tickets.
+ */
 export async function getBookingsForPoc(poc: string): Promise<Booking[]> {
-  const name = (poc || "").trim()
-  if (!name) return []
-  return queryBookings({ property: COLUMNS.poc, title: { equals: name } })
+  const key = (poc || "").trim().toLowerCase()
+  if (!key) return []
+  const all = await getAllBookings()
+  return all.filter((b) => (b.poc || "").trim().toLowerCase() === key)
 }
 
 /** Every request in the DB, newest first. Admin/leaderboard use only. */
