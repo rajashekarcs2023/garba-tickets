@@ -133,18 +133,17 @@ function toBooking(pageId: string, props: Record<string, any>): Booking {
   }
 }
 
-/** All requests assigned to a given POC, newest first. */
-export async function getBookingsForPoc(poc: string): Promise<Booking[]> {
-  const name = (poc || "").trim()
-  if (!name || !notionConfigured()) return []
+/** Query bookings with an optional Notion filter, newest first (paginated). */
+async function queryBookings(filter?: any): Promise<Booking[]> {
+  if (!notionConfigured()) return []
   const bookings: Booking[] = []
   let cursor: string | undefined
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 40; i++) {
     const body: any = {
       page_size: 100,
-      filter: { property: COLUMNS.poc, title: { equals: name } },
       sorts: [{ timestamp: "created_time", direction: "descending" }],
     }
+    if (filter) body.filter = filter
     if (cursor) body.start_cursor = cursor
     const data = await notionFetch(`/v1/databases/${databaseId()}/query`, {
       method: "POST",
@@ -158,6 +157,18 @@ export async function getBookingsForPoc(poc: string): Promise<Booking[]> {
     if (!cursor) break
   }
   return bookings
+}
+
+/** All requests assigned to a given POC, newest first. */
+export async function getBookingsForPoc(poc: string): Promise<Booking[]> {
+  const name = (poc || "").trim()
+  if (!name) return []
+  return queryBookings({ property: COLUMNS.poc, title: { equals: name } })
+}
+
+/** Every request in the DB, newest first. Admin/leaderboard use only. */
+export async function getAllBookings(): Promise<Booking[]> {
+  return queryBookings()
 }
 
 /** Read just the assigned POC for a page — used to authorize writes. */
