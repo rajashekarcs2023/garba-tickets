@@ -24,6 +24,8 @@ export interface PocEntry {
   name: string
   phone: string
   email: string
+  /** Optional dashboard login password. Blank = contact-only POC (no login). */
+  password?: string
 }
 
 export interface Settings {
@@ -98,8 +100,13 @@ function coerce(raw: any): Settings {
       s.points_of_contact = raw.points_of_contact
         .map((p: any) =>
           typeof p === "string"
-            ? { name: p.trim(), phone: "", email: "" }
-            : { name: String(p?.name || "").trim(), phone: String(p?.phone || "").trim(), email: String(p?.email || "").trim() },
+            ? { name: p.trim(), phone: "", email: "", password: "" }
+            : {
+                name: String(p?.name || "").trim(),
+                phone: String(p?.phone || "").trim(),
+                email: String(p?.email || "").trim(),
+                password: String(p?.password || "").trim(),
+              },
         )
         .filter((p: PocEntry) => p.name)
     }

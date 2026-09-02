@@ -15,6 +15,8 @@
 
 import crypto from "crypto"
 
+import { getSettings } from "./settings"
+
 export const SESSION_COOKIE = "garba_poc"
 const SESSION_TTL_SECONDS = 60 * 60 * 12 // 12h
 
@@ -72,11 +74,13 @@ function timingSafeEqual(a: string, b: string): boolean {
 }
 
 /**
- * Validate a username/password against admins first, then POCs. Returns the
- * canonical name + role on success, or null. Username match is case-insensitive;
- * password uses a constant-time compare.
+ * Validate a username/password. Order: env admins, env POCs (legacy), then the
+ * live POC roster in the Notion config store (admins add POC logins there, so a
+ * new POC can sign in without an env change or redeploy). Returns the canonical
+ * name + role on success, or null. Username match is case-insensitive; password
+ * uses a constant-time compare.
  */
-export function verifyCredentials(username: string, password: string): SessionUser | null {
+export async function verifyCredentials(username: string, password: string): Promise<SessionUser | null> {
   const u = (username || "").trim().toLowerCase()
   const p = password || ""
   for (const entry of adminUsers()) {
@@ -88,6 +92,18 @@ export function verifyCredentials(username: string, password: string): SessionUs
     if (entry.name.toLowerCase() === u && timingSafeEqual(p, entry.password)) {
       return { name: entry.name, role: "poc" }
     }
+  }
+  // POCs managed live in the Notion config (name + optional login password).
+  try {
+    const { points_of_contact } = await getSettings()
+    for (const poc of points_of_contact) {
+      const pw = (poc.password || "").trim()
+      if (pw && poc.name.toLowerCase() === u && timingSafeEqual(p, pw)) {
+        return { name: poc.name, role: "poc" }
+      }
+    }
+  } catch {
+    // Config unreachable — env credentials above still work.
   }
   return null
 }

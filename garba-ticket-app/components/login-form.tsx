@@ -22,7 +22,8 @@ export function LoginForm({ configured }: { configured: boolean }) {
       <CardContent>
         {!configured ? (
           <p className="text-sm text-destructive">
-            No POC accounts are configured yet. Set <code>POC_USERS</code> in the environment.
+            No accounts are configured yet. An admin can add POC logins on the admin settings page, or set{" "}
+            <code>POC_USERS</code>/<code>ADMIN_USERS</code> in the environment.
           </p>
         ) : (
           <form action={formAction} className="space-y-4">

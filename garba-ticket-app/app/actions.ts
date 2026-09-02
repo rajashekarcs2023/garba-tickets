@@ -18,7 +18,7 @@ const SESSION_MAX_AGE = 60 * 60 * 12 // 12h
 export async function login(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const username = String(formData.get("username") || "")
   const password = String(formData.get("password") || "")
-  const user = verifyCredentials(username, password)
+  const user = await verifyCredentials(username, password)
   if (!user) return { error: "Invalid username or password." }
 
   const store = await cookies()

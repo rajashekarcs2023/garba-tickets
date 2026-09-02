@@ -43,7 +43,7 @@ export function AdminSettings({
   }
 
   function addPoc() {
-    set("points_of_contact", [...form.points_of_contact, { name: "", phone: "", email: "" }])
+    set("points_of_contact", [...form.points_of_contact, { name: "", phone: "", email: "", password: "" }])
   }
   function updatePoc(i: number, patch: Partial<PocEntry>) {
     set(
@@ -191,8 +191,9 @@ export function AdminSettings({
               <CardHeader>
                 <CardTitle>Points of contact</CardTitle>
                 <CardDescription>
-                  These appear in the agent&apos;s request form dropdown and are used for auto-assign. Removing one stops
-                  it being offered. (Dashboard logins are managed separately in <code>POC_USERS</code>.)
+                  These appear in the agent&apos;s request form dropdown and are used for auto-assign. Set a{" "}
+                  <strong>login password</strong> to give a POC dashboard access (username = their name); leave it blank
+                  for a contact-only POC. Changes apply live — no redeploy.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -228,6 +229,16 @@ export function AdminSettings({
                           value={poc.email}
                           onChange={(e) => updatePoc(i, { email: e.target.value })}
                           placeholder="zoha@iso.org"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Login password</Label>
+                        <Input
+                          className="w-40"
+                          value={poc.password ?? ""}
+                          onChange={(e) => updatePoc(i, { password: e.target.value })}
+                          placeholder="blank = no login"
+                          autoComplete="off"
                         />
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => removePoc(i)} aria-label="Remove POC">
