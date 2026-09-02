@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation"
 
 import { authConfigured } from "@/lib/auth"
-import { currentPoc } from "@/lib/session"
+import { currentUser } from "@/lib/session"
 import { LoginForm } from "@/components/login-form"
 
 export const dynamic = "force-dynamic"
 
 export default async function Home() {
-  const poc = await currentPoc()
-  if (poc) redirect("/dashboard")
+  const user = await currentUser()
+  if (user) redirect(user.role === "admin" ? "/admin" : "/dashboard")
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-rose-50 via-amber-50 to-orange-100 flex flex-col items-center justify-center p-4">
