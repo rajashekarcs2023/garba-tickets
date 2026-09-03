@@ -41,6 +41,7 @@ const COLUMNS = {
   phone: process.env.NOTION_PROP_PHONE || "Phone",
   quantity: process.env.NOTION_PROP_TICKETS || "Tickets",
   paymentMethod: process.env.NOTION_PROP_PAYMENT_METHOD || "Payment Method",
+  reference: process.env.NOTION_PROP_REFERENCE || "Payment Reference",
   amount: process.env.NOTION_PROP_AMOUNT || "Amount (USD)",
   code: process.env.NOTION_PROP_CODE || "Code",
   status: process.env.NOTION_PROP_STATUS || "Status",
@@ -60,6 +61,7 @@ export interface Booking {
   phone: string
   quantity: number
   paymentMethod: string
+  reference: string
   amount: number | null
   status: string
   submitted: string | null
@@ -154,6 +156,7 @@ function toBooking(pageId: string, props: Record<string, any>): Booking {
     phone: String(get("phone") ?? "").trim(),
     quantity: Math.max(0, Math.floor(Number(get("quantity") ?? 0) || 0)),
     paymentMethod: String(get("paymentMethod") ?? "").trim(),
+    reference: String(get("reference") ?? "").trim(),
     amount: typeof amountRaw === "number" ? amountRaw : null,
     status: String(get("status") ?? "").trim(),
     submitted: (get("submitted") as string | null) ?? null,

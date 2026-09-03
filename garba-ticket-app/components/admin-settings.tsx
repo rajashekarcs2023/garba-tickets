@@ -175,7 +175,8 @@ export function SettingsPanel({
           <CardDescription>
             These appear in the agent&apos;s request form dropdown and are used for auto-assign. Set a{" "}
             <strong>login password</strong> to give a POC dashboard access (username = their name); leave it blank for a
-            contact-only POC. Changes apply live — no redeploy.
+            contact-only POC. Changes apply live — no redeploy. Existing POCs from your env are shown here until you
+            first <strong>Save</strong>, after which this list becomes the source of truth (edit or remove any of them).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">

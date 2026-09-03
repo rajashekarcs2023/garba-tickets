@@ -142,6 +142,7 @@ function BookingsTable({
                 <TableHead>Contact</TableHead>
                 <TableHead className="text-center">Tickets</TableHead>
                 <TableHead>Payment</TableHead>
+                <TableHead>Payment ref</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
                 <TableHead>Code</TableHead>
                 <TableHead>Requested</TableHead>
@@ -163,6 +164,7 @@ function BookingsTable({
                       {b.paymentMethod || "—"}
                     </Badge>
                   </TableCell>
+                  <TableCell className="font-mono text-xs">{b.reference || "—"}</TableCell>
                   <TableCell className="text-right">{formatAmount(b.amount)}</TableCell>
                   <TableCell className="font-mono text-xs">{b.code || "—"}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{formatDate(b.submitted)}</TableCell>

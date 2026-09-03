@@ -114,6 +114,60 @@ function coerce(raw: any): Settings {
   return s
 }
 
+/** Parse "Name:password, Name2:password2" (mirrors auth.ts POC_USERS). */
+function parseUserPairs(raw: string | undefined): { name: string; password: string }[] {
+  const out: { name: string; password: string }[] = []
+  for (const entry of (raw || "").split(",")) {
+    const t = entry.trim()
+    if (!t) continue
+    const i = t.indexOf(":")
+    if (i <= 0) continue
+    const name = t.slice(0, i).trim()
+    const password = t.slice(i + 1).trim()
+    if (name) out.push({ name, password })
+  }
+  return out
+}
+
+/** Parse "Name|phone|email, ..." (mirrors the agent's GARBA_POC_CONTACTS). */
+function parseContacts(raw: string | undefined): Record<string, { phone: string; email: string }> {
+  const map: Record<string, { phone: string; email: string }> = {}
+  for (const entry of (raw || "").split(",")) {
+    const t = entry.trim()
+    if (!t) continue
+    const [name, phone = "", email = ""] = t.split("|").map((x) => x.trim())
+    if (name) map[name.toLowerCase()] = { phone, email }
+  }
+  return map
+}
+
+/**
+ * POC roster derived from env, used ONLY to seed the admin form before anything
+ * is saved to the config store — so existing POCs are visible/editable instead of
+ * a blank list. Once the admin saves, the Notion config becomes authoritative.
+ * Sources mirror the agent + auth: POC_USERS (name + login password),
+ * GARBA_POINTS_OF_CONTACT (extra names), GARBA_POC_CONTACTS (phone/email).
+ */
+export function envPointsOfContact(): PocEntry[] {
+  const contacts = parseContacts(process.env.GARBA_POC_CONTACTS)
+  const byName = new Map<string, PocEntry>()
+  const add = (rawName: string, password = "") => {
+    const name = rawName.trim()
+    const key = name.toLowerCase()
+    if (!key) return
+    const existing = byName.get(key)
+    if (existing) {
+      if (password && !existing.password) existing.password = password
+      return
+    }
+    const c = contacts[key] || { phone: "", email: "" }
+    byName.set(key, { name, phone: c.phone, email: c.email, password })
+  }
+  for (const u of parseUserPairs(process.env.POC_USERS)) add(u.name, u.password)
+  for (const n of (process.env.GARBA_POINTS_OF_CONTACT || "").split(",")) add(n)
+  return [...byName.values()]
+}
+
 function readConfigText(props: Record<string, any>): string {
   const byLower: Record<string, any> = {}
   for (const [name, prop] of Object.entries(props)) byLower[name.toLowerCase()] = prop
@@ -132,17 +186,27 @@ async function firstRow(): Promise<{ id: string; props: Record<string, any> } | 
   return page ? { id: page.id, props: page.properties || {} } : null
 }
 
-/** Read current settings (merged with defaults). Falls back to defaults on any issue. */
+/**
+ * Read current settings (merged with defaults). Falls back to defaults on any
+ * issue. When no POCs have been saved to the config store yet, the roster is
+ * seeded from env (POC_USERS / GARBA_* ) so the admin can see and edit the
+ * existing POCs instead of a blank list; saving makes the config authoritative.
+ */
 export async function getSettings(): Promise<Settings> {
-  if (!configConfigured()) return { ...DEFAULT_SETTINGS }
+  const seed = (s: Settings): Settings => {
+    if (s.points_of_contact.length > 0) return s
+    const envPocs = envPointsOfContact()
+    return envPocs.length > 0 ? { ...s, points_of_contact: envPocs } : s
+  }
+  if (!configConfigured()) return seed({ ...DEFAULT_SETTINGS })
   try {
     const row = await firstRow()
-    if (!row) return { ...DEFAULT_SETTINGS }
+    if (!row) return seed({ ...DEFAULT_SETTINGS })
     const text = readConfigText(row.props).trim()
-    if (!text) return { ...DEFAULT_SETTINGS }
-    return coerce(JSON.parse(text))
+    if (!text) return seed({ ...DEFAULT_SETTINGS })
+    return seed(coerce(JSON.parse(text)))
   } catch {
-    return { ...DEFAULT_SETTINGS }
+    return seed({ ...DEFAULT_SETTINGS })
   }
 }
 
