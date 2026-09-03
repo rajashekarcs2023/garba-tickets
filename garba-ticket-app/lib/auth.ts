@@ -94,11 +94,18 @@ export async function verifyCredentials(username: string, password: string): Pro
     }
   }
   // POCs managed live in the Notion config (name + optional login password).
+  // Accept either the POC's full name OR their email as the username — POCs know
+  // their email, whereas the full display name (with spaces) is unintuitive to
+  // type. Either way the session carries the canonical name, which is what scopes
+  // their ticket view ("Assigned ISO POC").
   try {
     const { points_of_contact } = await getSettings()
     for (const poc of points_of_contact) {
       const pw = (poc.password || "").trim()
-      if (pw && poc.name.toLowerCase() === u && timingSafeEqual(p, pw)) {
+      if (!pw) continue
+      const matchesName = poc.name.toLowerCase() === u
+      const matchesEmail = (poc.email || "").trim().toLowerCase() === u
+      if ((matchesName || matchesEmail) && timingSafeEqual(p, pw)) {
         return { name: poc.name, role: "poc" }
       }
     }

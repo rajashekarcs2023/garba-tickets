@@ -17,7 +17,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
     <Card className="w-full max-w-sm shadow-lg">
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
-        <CardDescription>Use the POC username and password shared by the ISO team.</CardDescription>
+        <CardDescription>Use your email (or name) and the password shared by the ISO team.</CardDescription>
       </CardHeader>
       <CardContent>
         {!configured ? (
@@ -28,8 +28,15 @@ export function LoginForm({ configured }: { configured: boolean }) {
         ) : (
           <form action={formAction} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input id="username" name="username" autoComplete="username" required autoFocus />
+              <Label htmlFor="username">Email or username</Label>
+              <Input
+                id="username"
+                name="username"
+                autoComplete="username"
+                placeholder="you@sjsu.edu"
+                required
+                autoFocus
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
