@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 
 import { SESSION_COOKIE, createToken, verifyCredentials } from "@/lib/auth"
-import { currentPoc, currentUser } from "@/lib/session"
+import { currentUser } from "@/lib/session"
 import { getPagePoc, setFlag, type FlagField } from "@/lib/notion"
 import { getSettings, saveSettings, type Settings } from "@/lib/settings"
 
@@ -45,24 +45,29 @@ export interface ToggleResult {
 
 /**
  * Flip the "Contacted" or "Paid" checkbox on a request — the only writes this
- * app performs. Authorized server-side: the row must belong to the signed-in POC,
- * so a POC can never touch another POC's tickets even by guessing a page id.
+ * app performs. Authorized server-side:
+ *   - POCs may only touch requests assigned to them (scoped by "Assigned ISO POC"),
+ *     so one POC can never modify another's tickets even by guessing a page id.
+ *   - Admins may fulfill on any POC's behalf (used by the admin per-POC view).
  */
 export async function toggleFlag(pageId: string, field: FlagField, value: boolean): Promise<ToggleResult> {
-  const poc = await currentPoc()
-  if (!poc) return { success: false, message: "Session expired — please sign in again." }
+  const user = await currentUser()
+  if (!user) return { success: false, message: "Session expired — please sign in again." }
   if (field !== "paid" && field !== "contacted") {
     return { success: false, message: "That action isn't allowed." }
   }
 
-  let owner: string | null
-  try {
-    owner = await getPagePoc(pageId)
-  } catch {
-    return { success: false, message: "Couldn't reach Notion. Try again." }
-  }
-  if (!owner || owner.toLowerCase() !== poc.toLowerCase()) {
-    return { success: false, message: "That request isn't assigned to you." }
+  // Ownership check applies to POCs only; admins can act on any request.
+  if (user.role !== "admin") {
+    let owner: string | null
+    try {
+      owner = await getPagePoc(pageId)
+    } catch {
+      return { success: false, message: "Couldn't reach Notion. Try again." }
+    }
+    if (!owner || owner.toLowerCase() !== user.name.toLowerCase()) {
+      return { success: false, message: "That request isn't assigned to you." }
+    }
   }
 
   try {
@@ -72,6 +77,7 @@ export async function toggleFlag(pageId: string, field: FlagField, value: boolea
   }
 
   revalidatePath("/dashboard")
+  revalidatePath("/admin")
   if (field === "paid") {
     return { success: true, message: value ? "Marked as paid — moved to Completed." : "Reopened — moved back to Active." }
   }

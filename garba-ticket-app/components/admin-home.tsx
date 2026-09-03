@@ -124,9 +124,11 @@ export function AdminHome({
                   <span className="text-sm text-muted-foreground">{filtered.length} request(s)</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Read-only view. Each POC ticks Contacted / Paid from their own dashboard.
+                  {pocFilter === ALL
+                    ? "Read-only overview. Select a specific POC above to tick Contacted / Paid on their behalf."
+                    : `Editing as ${pocFilter} — you can tick Contacted / Paid for their requests.`}
                 </p>
-                <BookingsView bookings={filtered} readOnly showPoc={pocFilter === ALL} />
+                <BookingsView bookings={filtered} readOnly={pocFilter === ALL} showPoc={pocFilter === ALL} />
               </>
             )}
           </TabsContent>
