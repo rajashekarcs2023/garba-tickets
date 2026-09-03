@@ -115,6 +115,21 @@ export function SettingsPanel({
               onChange={(e) => set("max_tickets_per_request", Number(e.target.value))}
             />
           </div>
+          <div className="space-y-2 sm:col-span-3">
+            <Label htmlFor="online-url">Online payment link</Label>
+            <Input
+              id="online-url"
+              type="url"
+              inputMode="url"
+              placeholder="https://square.link/u/…"
+              value={form.online_payment_url}
+              onChange={(e) => set("online_payment_url", e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Shown to buyers who choose &quot;Pay online&quot;. Leave blank to hide the link. Applies live — no
+              redeploy.
+            </p>
+          </div>
         </CardContent>
       </Card>
 

@@ -32,6 +32,8 @@ export interface Settings {
   ticket_price_usd: number
   currency_symbol: string
   max_tickets_per_request: number
+  /** Hosted payment link shown to buyers who choose "Pay online". Blank = no link. */
+  online_payment_url: string
   price_tiers: PriceTier[]
   points_of_contact: PocEntry[]
 }
@@ -40,6 +42,7 @@ export const DEFAULT_SETTINGS: Settings = {
   ticket_price_usd: 18,
   currency_symbol: "$",
   max_tickets_per_request: 5,
+  online_payment_url: "",
   price_tiers: [],
   points_of_contact: [],
 }
@@ -90,6 +93,7 @@ function coerce(raw: any): Settings {
     if (typeof raw.max_tickets_per_request === "number" && raw.max_tickets_per_request >= 1) {
       s.max_tickets_per_request = Math.floor(raw.max_tickets_per_request)
     }
+    if (typeof raw.online_payment_url === "string") s.online_payment_url = raw.online_payment_url.trim()
     if (Array.isArray(raw.price_tiers)) {
       s.price_tiers = raw.price_tiers
         .map((t: any) => ({ min_quantity: Number(t?.min_quantity), price_per_ticket: Number(t?.price_per_ticket) }))
