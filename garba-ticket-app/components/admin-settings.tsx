@@ -115,6 +115,20 @@ export function SettingsPanel({
               onChange={(e) => set("max_tickets_per_request", Number(e.target.value))}
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="max-account">Max per account (lifetime)</Label>
+            <Input
+              id="max-account"
+              type="number"
+              min={0}
+              step="1"
+              value={form.max_tickets_per_account}
+              onChange={(e) => set("max_tickets_per_account", Number(e.target.value))}
+            />
+            <p className="text-xs text-muted-foreground">
+              Total tickets one account can ever request across all their chats. <strong>0 = unlimited.</strong>
+            </p>
+          </div>
           <div className="space-y-2 sm:col-span-3">
             <Label htmlFor="online-url">Online payment link</Label>
             <Input

@@ -32,6 +32,8 @@ export interface Settings {
   ticket_price_usd: number
   currency_symbol: string
   max_tickets_per_request: number
+  /** Lifetime cap on total tickets one account (agent address) can ever request. 0 = unlimited. */
+  max_tickets_per_account: number
   /** Hosted payment link shown to buyers who choose "Pay online". Blank = no link. */
   online_payment_url: string
   price_tiers: PriceTier[]
@@ -42,6 +44,7 @@ export const DEFAULT_SETTINGS: Settings = {
   ticket_price_usd: 18,
   currency_symbol: "$",
   max_tickets_per_request: 5,
+  max_tickets_per_account: 0,
   online_payment_url: "",
   price_tiers: [],
   points_of_contact: [],
@@ -92,6 +95,10 @@ function coerce(raw: any): Settings {
     if (typeof raw.currency_symbol === "string" && raw.currency_symbol.trim()) s.currency_symbol = raw.currency_symbol.trim()
     if (typeof raw.max_tickets_per_request === "number" && raw.max_tickets_per_request >= 1) {
       s.max_tickets_per_request = Math.floor(raw.max_tickets_per_request)
+    }
+    // 0 is valid here (unlimited), so accept any non-negative integer.
+    if (typeof raw.max_tickets_per_account === "number" && raw.max_tickets_per_account >= 0) {
+      s.max_tickets_per_account = Math.floor(raw.max_tickets_per_account)
     }
     if (typeof raw.online_payment_url === "string") s.online_payment_url = raw.online_payment_url.trim()
     if (Array.isArray(raw.price_tiers)) {
